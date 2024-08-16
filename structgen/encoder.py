@@ -21,6 +21,7 @@ class MPNEncoder(nn.Module):
         )
         self.W_s = nn.Embedding(args.vocab_size, args.hidden_size)
         self.layers = nn.ModuleList([
+            
                 MPNNLayer(args.hidden_size, args.hidden_size * 3, dropout=args.dropout)
                 for _ in range(args.depth)
         ])
