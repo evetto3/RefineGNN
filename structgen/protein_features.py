@@ -24,13 +24,13 @@ class PositionalEncodings(nn.Module):
         N_batch = E_idx.size(0)
         N_nodes = E_idx.size(1)
         N_neighbors = E_idx.size(2)
-        ii = torch.arange(N_nodes, dtype=torch.float32).view((1, -1, 1)).cuda()
+        ii = torch.arange(N_nodes, dtype=torch.float32).view((1, -1, 1)).cpu()
         d = (E_idx.float() - ii).unsqueeze(-1)
         # Original Transformer frequencies
         frequency = torch.exp(
             torch.arange(0, self.num_embeddings, 2, dtype=torch.float32)
             * -(np.log(10000.0) / self.num_embeddings)
-        ).cuda()
+        ).cpu()
         # Grid-aligned
         # frequency = 2. * np.pi * torch.exp(
         #     -torch.linspace(
@@ -71,14 +71,14 @@ class ProteinFeatures(nn.Module):
         N = X.size(1)
         mask_2D = torch.unsqueeze(mask,1) * torch.unsqueeze(mask,2)
         if self.direction == 'bidirectional':
-            mask_2D = mask_2D - torch.eye(N).unsqueeze(0).cuda()  # remove self
+            mask_2D = mask_2D - torch.eye(N).unsqueeze(0).cpu()  # remove self
             mask_2D = mask_2D.clamp(min=0)
         elif self.direction == 'forward':
-            nmask = torch.arange(X.size(1)).cuda()
+            nmask = torch.arange(X.size(1)).cpu()
             nmask = nmask.view(1,-1,1) > nmask.view(1,1,-1)
             mask_2D = nmask.float() * mask_2D  # [B, N, N]
         else:
-            raise ValueError('invalid direction', direction)
+            raise ValueError('invalid direction', self.direction)
 
         dX = torch.unsqueeze(X,1) - torch.unsqueeze(X,2)
         D = mask_2D * torch.sqrt(torch.sum(dX**2, 3) + eps)
@@ -106,7 +106,7 @@ class ProteinFeatures(nn.Module):
     def _rbf(self, D):
         # Distance radial basis function
         D_min, D_max, D_count = 0., 20., self.num_rbf
-        D_mu = torch.linspace(D_min, D_max, D_count).cuda()
+        D_mu = torch.linspace(D_min, D_max, D_count).cpu()
         D_mu = D_mu.view([1,1,1,-1])
         D_sigma = (D_max - D_min) / D_count
         D_expand = torch.unsqueeze(D, -1)
@@ -229,8 +229,8 @@ class ProteinFeatures(nn.Module):
         u_1 = U[:,1:-1,:]
         u_0 = U[:,2:,:]
         # Backbone normals
-        n_2 = F.normalize(torch.cross(u_2, u_1), dim=-1)
-        n_1 = F.normalize(torch.cross(u_1, u_0), dim=-1)
+        n_2 = F.normalize(torch.linalg.cross(u_2, u_1), dim=-1)
+        n_1 = F.normalize(torch.linalg.cross(u_1, u_0), dim=-1)
 
         # Bond angle calculation
         cosA = -(u_1 * u_0).sum(-1)
@@ -252,12 +252,12 @@ class ProteinFeatures(nn.Module):
         u_1 = U[:,1:-1,:]
         u_0 = U[:,2:,:]
         # Backbone normals
-        n_2 = F.normalize(torch.cross(u_2, u_1), dim=-1)
-        n_1 = F.normalize(torch.cross(u_1, u_0), dim=-1)
+        n_2 = F.normalize(torch.linalg.cross(u_2, u_1), dim=-1)
+        n_1 = F.normalize(torch.linalg.cross(u_1, u_0), dim=-1)
 
         # Build relative orientations
         o_1 = F.normalize(u_2 - u_1, dim=-1)
-        O = torch.stack((o_1, n_2, torch.cross(o_1, n_2)), 2)
+        O = torch.stack((o_1, n_2, torch.linalg.cross(o_1, n_2)), 2)
         O = O.view(list(O.shape[:2]) + [9])
         O = F.pad(O, (0,0,1,2), 'constant', 0)
 
@@ -281,7 +281,7 @@ class ProteinFeatures(nn.Module):
         # Frame features (neighbors sorted)
         X_neighbors = gather_nodes(X, E_idx.sort(dim=-1).values)
         dX = X_neighbors - X.unsqueeze(-2)
-        F_vectors = torch.cross(dX[:, :, 1:], dX[:, :, :-1], dim=-1)
+        F_vectors = torch.linalg.cross(dX[:, :, 1:], dX[:, :, :-1], dim=-1)
         F_norms = torch.norm(F_vectors, dim=-1)
         F_vectors = F.normalize(F_vectors, dim=-1)
         F_vectors = torch.matmul(O.unsqueeze(2), F_vectors.unsqueeze(-1)).squeeze(-1)
@@ -299,8 +299,8 @@ class ProteinFeatures(nn.Module):
         u_1 = U[:,1:-1,:]
         u_0 = U[:,2:,:]
         # Backbone normals
-        n_2 = F.normalize(torch.cross(u_2, u_1), dim=-1)
-        n_1 = F.normalize(torch.cross(u_1, u_0), dim=-1)
+        n_2 = F.normalize(torch.linalg.cross(u_2, u_1), dim=-1)
+        n_1 = F.normalize(torch.linalg.cross(u_1, u_0), dim=-1)
 
         # Angle between normals
         cosD = (n_2 * n_1).sum(-1)

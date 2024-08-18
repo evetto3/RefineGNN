@@ -17,11 +17,11 @@ from tqdm import tqdm
 
 def build_model(args):
     if args.architecture == 'RefineGNN':
-        return HierarchicalDecoder(args).cuda()
+        return HierarchicalDecoder(args).cpu()
     elif args.architecture == 'AR-GNN':
-        return Decoder(args, return_coords=False).cuda()
+        return Decoder(args, return_coords=False).cpu()
     elif args.architecture == 'LSTM':
-        return Seq2Seq(args).cuda()
+        return Seq2Seq(args).cpu()
     else:
         raise ValueError('Unknown architecture')
 
@@ -45,7 +45,7 @@ if args.architecture == "RefineGNN":
 else:
     data = CDRDataset(args.data_path, hcdr=args.cdr_type, lcdr="").cdrs
 
-model_ckpt, opt_ckpt, model_args = torch.load(args.load_model)
+model_ckpt, opt_ckpt, model_args = torch.load(args.load_model, map_location='cpu')
 model_args.architecture = args.architecture
 model = build_model(model_args)
 model.load_state_dict(model_ckpt)

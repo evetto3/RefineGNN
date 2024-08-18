@@ -94,7 +94,7 @@ class HierarchicalDecoder(nn.Module):
 
     def init_struct(self, B, N, K):
         # initial V
-        pos = torch.arange(N).cuda()
+        pos = torch.arange(N).cpu()
         V = self.pos_embedding(pos.view(1, N, 1))  # [1, N, 1, 16]
         V = V.squeeze(2).expand(B, -1, -1)  # [B, N, 6]
         # initial E_idx
@@ -161,7 +161,7 @@ class HierarchicalDecoder(nn.Module):
         return bS, bmask, len(LS), len(RS)
 
     def get_completion_mask(self, B, N, cdr_range):
-        cmask = torch.zeros(B, N).cuda()
+        cmask = torch.zeros(B, N).cpu()
         for i, (l,r) in enumerate(cdr_range):
             cmask[i, l:r+1] = 1
         return cmask

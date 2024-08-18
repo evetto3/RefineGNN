@@ -197,9 +197,9 @@ def completize(batch):
     X[isnan] = 0.
 
     # Conversion
-    S = torch.from_numpy(S).long().cuda()
-    X = torch.from_numpy(X).float().cuda()
-    mask = torch.from_numpy(mask).float().cuda()
+    S = torch.from_numpy(S).long().cpu()
+    X = torch.from_numpy(X).float().cpu()
+    mask = torch.from_numpy(mask).float().cpu()
     return X, S, L, mask
 
 
@@ -229,10 +229,10 @@ def featurize(batch, context=True):
     X[isnan] = 0.
 
     # Conversion
-    S = torch.from_numpy(S).long().cuda()
-    X = torch.from_numpy(X).float().cuda()
-    P = torch.from_numpy(P).float().cuda()
-    mask = torch.from_numpy(mask).float().cuda()
+    S = torch.from_numpy(S).long().cpu()
+    X = torch.from_numpy(X).float().cpu()
+    P = torch.from_numpy(P).float().cpu()
+    mask = torch.from_numpy(mask).float().cpu()
 
     if context:  # extract context
         L_max = max([len(b['context']) for b in batch])
@@ -246,8 +246,8 @@ def featurize(batch, context=True):
             cmask[i, :l] = 1.
             crange[i] = (b['context'].index('#'), b['context'].rindex('#'))
 
-        cmask = torch.from_numpy(cmask).float().cuda()
-        cS = torch.from_numpy(cS).long().cuda()
+        cmask = torch.from_numpy(cmask).float().cpu()
+        cS = torch.from_numpy(cS).long().cpu()
         context = (cS, cmask, crange)
 
     return (X, S, P, mask), context
